@@ -1,0 +1,81 @@
+# ========================================
+# QUERY 1: Ver todos los logs con formato estándar
+# ========================================
+fields @timestamp, tipo, log_datos.mensaje
+| sort @timestamp desc
+
+# ========================================
+# QUERY 2: Filtrar solo logs de tipo INFO
+# ========================================
+fields @timestamp, tipo, log_datos.mensaje, log_datos.tenant_id, log_datos.pelicula_datos.nombre
+| filter tipo = "INFO"
+| sort @timestamp desc
+
+# ========================================
+# QUERY 3: Filtrar solo logs de tipo ERROR
+# ========================================
+fields @timestamp, tipo, log_datos.mensaje, log_datos.error_type, log_datos.error_detail
+| filter tipo = "ERROR"
+| sort @timestamp desc
+
+# ========================================
+# QUERY 4: Contar ejecuciones exitosas vs errores
+# ========================================
+stats count(*) by tipo
+
+# ========================================
+# QUERY 5: Ver películas creadas exitosamente
+# ========================================
+fields @timestamp, log_datos.tenant_id, log_datos.pelicula_datos.nombre, log_datos.pelicula_datos.genero, log_datos.pelicula_datos.duracion_minutos
+| filter tipo = "INFO" and log_datos.mensaje = "Película creada exitosamente"
+| sort @timestamp desc
+
+# ========================================
+# QUERY 6: Películas por género (solo exitosas)
+# ========================================
+filter tipo = "INFO" and log_datos.mensaje = "Película creada exitosamente"
+| stats count(*) by log_datos.pelicula_datos.genero as genero
+
+# ========================================
+# QUERY 7: Películas ordenadas por duración (solo exitosas)
+# ========================================
+fields @timestamp, log_datos.pelicula_datos.nombre, log_datos.pelicula_datos.duracion_minutos
+| filter tipo = "INFO" and log_datos.mensaje = "Película creada exitosamente"
+| sort log_datos.pelicula_datos.duracion_minutos desc
+
+# ========================================
+# QUERY 8: Tipos de errores ocurridos
+# ========================================
+fields @timestamp, log_datos.error_type, log_datos.error_detail
+| filter tipo = "ERROR"
+| stats count(*) by log_datos.error_type
+
+# ========================================
+# QUERY 9: Películas de un tenant específico
+# ========================================
+fields @timestamp, log_datos.pelicula_datos.nombre, log_datos.pelicula_datos.genero
+| filter tipo = "INFO" and log_datos.tenant_id = "CINEPLANET"
+| sort @timestamp desc
+
+# ========================================
+# QUERY 10: Buscar películas de Terror con duración mayor a 120 min
+# ========================================
+fields @timestamp, log_datos.pelicula_datos.nombre, log_datos.pelicula_datos.duracion_minutos
+| filter tipo = "INFO" 
+    and log_datos.pelicula_datos.genero = "Terror" 
+    and log_datos.pelicula_datos.duracion_minutos > 120
+| sort log_datos.pelicula_datos.duracion_minutos desc
+
+# ========================================
+# QUERY 11: Ver métricas de Lambda junto con logs
+# ========================================
+fields @timestamp, @type, @billedDuration, @memorySize, tipo, log_datos.mensaje
+| filter @type = "REPORT" or ispresent(tipo)
+| sort @timestamp desc
+
+# ========================================
+# QUERY 12: Timeline de eventos (INFO y ERROR)
+# ========================================
+fields @timestamp, tipo, log_datos.mensaje
+| filter ispresent(tipo)
+| sort @timestamp asc
